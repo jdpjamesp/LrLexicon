@@ -37,7 +37,9 @@ local function parseKeywords(content)
 
 	local function addKeyword(raw)
 		local keyword = raw:match("^%s*(.-)%s*$")
-		if keyword ~= "" and not seen[keyword:lower()] then
+		-- A trimmed candidate ending in ':' is a leftover label/preamble
+		-- fragment (e.g. "comma-separated keywords:"), never a real keyword.
+		if keyword ~= "" and not keyword:match(":$") and not seen[keyword:lower()] then
 			seen[keyword:lower()] = true
 			table.insert(keywords, keyword)
 		end
@@ -47,8 +49,8 @@ local function parseKeywords(content)
 		line = line:match("^%s*(.-)%s*$")
 		line = line:gsub("^[%-%*•]+%s*", "")
 
-		local label, rest = line:match("^(%a[%a%s]-):%s*(.+)$")
-		if label and #label <= 20 then
+		local label, rest = line:match("^([%a%-][%a%s%-]-):%s*(.+)$")
+		if label and #label <= 30 then
 			line = rest
 		end
 

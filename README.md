@@ -28,11 +28,11 @@ writes back AI-generated keywords onto photo metadata.
   and logs the parsed keywords per photo.
 - Step 6 added, not yet confirmed, with the step-8 review dialog pulled
   forward: after generation, a modal review dialog lists each photo with an
-  include/exclude checkbox and an editable, multi-line keyword text field
-  (first layout attempt had a fixed-height scroll area and a single-line
-  field that truncated text — fixed to size to content and stack a
-  multi-line field per photo, only scrolling once there are several photos).
-  Only on clicking "Write Keywords" does it write via
+  include/exclude checkbox and an editable, multi-line keyword text field.
+  Layout confirmed good after a fix (first attempt had a fixed-height scroll
+  area and a single-line field that truncated text — now sizes to content
+  and stacks a multi-line field per photo, only scrolling once there are
+  several photos). Only on clicking "Write Keywords" does it write via
   `catalog:withWriteAccessDo()` (`catalog:createKeyword()` +
   `photo:addKeyword()`); "Cancel" writes nothing. API endpoint is currently
   hardcoded in `GenerateKeywords.lua` to the local Ollama setup used in step
@@ -49,6 +49,14 @@ writes back AI-generated keywords onto photo metadata.
   hosted model (OpenAI, Claude via a compatible endpoint) will likely be far
   more consistent — worth reassessing once step 7's settings dialog makes
   switching providers easy.
+  - One concrete bug found via live testing: a response starting with
+    `"comma-separated keywords:, photography, ..."` (the model echoing the
+    prompt's own wording, with a comma right after the colon) slipped
+    through as a bogus `"comma-separated keywords:"` token — the label
+    regex only matched letters/spaces, so the hyphen in "comma-separated"
+    broke the match. Fixed by allowing hyphens in the label character class
+    and dropping any parsed candidate that ends in `:` as a second line of
+    defense.
 - Added progress reporting (part of step 8, pulled forward): generation now
   reports to Lightroom's own progress/activity area via `LrProgressScope`,
   showing the current filename and position (e.g. "DSC04304.ARW (2/5)") and
