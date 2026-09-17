@@ -200,11 +200,20 @@ local function findOrCreateKeyword(catalog, cache, name)
 	return created
 end
 
-local function writeKeywords(catalog, accepted)
+local function writeKeywords(context, catalog, accepted)
+	local total = #accepted
+	local progressScope = LrProgressScope({
+		title = "LrLexicon: Writing Keywords",
+		functionContext = context,
+	})
+
 	catalog:withWriteAccessDo("LrLexicon: Write Keywords", function()
 		local keywordCache = {}
 
-		for _, entry in ipairs(accepted) do
+		for i, entry in ipairs(accepted) do
+			progressScope:setCaption(string.format("%s (%d/%d)", entry.filename, i, total))
+			progressScope:setPortionComplete(i - 1, total)
+
 			local written = 0
 			for _, keywordName in ipairs(entry.keywords) do
 				local keyword = findOrCreateKeyword(catalog, keywordCache, keywordName)
@@ -217,8 +226,12 @@ local function writeKeywords(catalog, accepted)
 				end
 			end
 			logger:infof("Wrote %d/%d keyword(s) to %s", written, #entry.keywords, entry.filename)
+
+			progressScope:setPortionComplete(i, total)
 		end
 	end)
+
+	progressScope:done()
 end
 
 LrFunctionContext.postAsyncTaskWithContext("LrLexicon_GenerateKeywords", function(context)
@@ -305,7 +318,7 @@ LrFunctionContext.postAsyncTaskWithContext("LrLexicon_GenerateKeywords", functio
 		return
 	end
 
-	writeKeywords(catalog, accepted)
+	writeKeywords(context, catalog, accepted)
 
 	LrDialogs.message(
 		"LrLexicon",
