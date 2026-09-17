@@ -6,9 +6,13 @@ writes back AI-generated keywords onto photo metadata.
 
 ## Status
 
-Step 1 confirmed working: bare plugin with a single menu item under
-**File > Plug-in Extras > LrLexicon: Log Selected Photos** that logs the
-filename and existing keywords of each selected photo.
+- Step 1 confirmed working: **File > Plug-in Extras > LrLexicon: Log Selected
+  Photos** logs the filename and existing keywords of each selected photo.
+- Step 3 added, not yet confirmed: **File > Plug-in Extras > LrLexicon: Test
+  Export Preview** generates a ~1024px JPEG thumbnail per selected photo via
+  `photo:requestJpegThumbnail()`, base64-encodes it, and logs byte/base64
+  sizes — proving out the exact data shape that will get sent to the vision
+  API in step 5.
 
 ## Structure
 
@@ -16,6 +20,8 @@ filename and existing keywords of each selected photo.
 LrLexicon.lrplugin/
   Info.lua                  -- plugin manifest, menu registration
   LogSelectedPhotos.lua     -- step 1: logs selected photos' filenames/keywords
+  ExportPreview.lua         -- step 3: generates + base64-encodes a preview JPEG per photo
+  Base64.lua                -- pure-Lua base64 encoder (no bit-library dependency)
 ```
 
 ## Loading the plugin in Lightroom Classic
@@ -32,5 +38,7 @@ LrLexicon.lrplugin/
 
 ## Build order
 
-See project handover notes. Current step: 1 (scaffold + selection logging).
-Next: export a small preview per photo for the Claude API call.
+See project handover notes. Steps 1-2 done and confirmed. Step 3 (preview
+export + base64 encode) implemented, pending live confirmation in Lightroom.
+Next after that: standalone test of a vision API call (any OpenAI-compatible
+endpoint) with one base64 image, before wiring it into the plugin.

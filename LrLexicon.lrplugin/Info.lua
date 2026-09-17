@@ -11,6 +11,10 @@ return {
 			title = "LrLexicon: Log Selected Photos",
 			file = "LogSelectedPhotos.lua",
 		},
+		{
+			title = "LrLexicon: Test Export Preview",
+			file = "ExportPreview.lua",
+		},
 	},
 
 	VERSION = { major = 0, minor = 1, revision = 0, build = 1 },
