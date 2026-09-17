@@ -12,7 +12,11 @@ Plug-in Extras > LrLexicon: Generate Keywords**, review/edit the generated
 keywords per photo in a modal dialog, and write the accepted ones to the
 catalog.
 
-Not yet built: general polish (rate limiting, broader error handling).
+Also has: retry-with-backoff on rate-limited/server-error API responses,
+defensive keyword filtering (length/count caps), and failure messages that
+surface the actual last error rather than only pointing at the log.
+
+Not yet built: further polish as issues come up (e.g. per-provider quirks).
 
 ## Structure
 
@@ -64,10 +68,16 @@ reads from; there's no hardcoded config left in the pipeline itself.
   against `llava:latest` has produced a clean keyword list, a plain caption,
   a labeled breakdown, and even a literal echo of the prompt's own wording,
   across separate calls. `parseKeywords()` in `GenerateKeywords.lua` tolerates
-  line breaks, bullets, and stray label prefixes, but the review dialog is
-  the real safety net for whatever slips through — a hosted model (OpenAI,
-  Claude via a compatible endpoint) should be far more consistent once the
-  settings dialog makes switching providers easy.
+  line breaks, bullets, stray label prefixes, and caps both individual
+  keyword length (60 chars) and count per photo (25), but the review dialog
+  is the real safety net for whatever slips through — a hosted model (OpenAI,
+  Claude via a compatible endpoint) should be far more consistent, easy to
+  try now via the settings dialog.
+- **Rate limits/transient errors:** `ApiClient.generateKeywords()` retries up
+  to 3 times with exponential backoff (2s, 4s, 8s) on HTTP 429 or 5xx
+  responses before giving up on that photo. No proactive throttling between
+  requests — this is reactive only, since a fixed delay would just slow down
+  local-model usage for no benefit.
 - **Preview size.** `photo:requestJpegThumbnail(1024, 1024, ...)` previews
   have run 260KB-1.2MB base64-encoded — larger than expected for a "small
   preview." Worth revisiting if large batches hit payload-size or cost

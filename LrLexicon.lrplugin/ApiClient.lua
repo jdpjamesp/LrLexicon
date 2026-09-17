@@ -3,10 +3,14 @@
 -- single provider.
 
 local LrHttp = import 'LrHttp'
+local LrTasks = import 'LrTasks'
 
 local Json = require 'Json'
 
 local ApiClient = {}
+
+local MAX_RETRIES = 3
+local RETRY_BASE_DELAY_SECONDS = 2
 
 --[[
 config = {
@@ -43,12 +47,25 @@ function ApiClient.generateKeywords(config, base64ImageData)
 		table.insert(headers, { field = "Authorization", value = "Bearer " .. config.apiKey })
 	end
 
-	local result, responseHeaders = LrHttp.post(config.baseUrl, requestBody, headers, "POST", 60)
+	local result, responseHeaders
 
-	if not result then
-		local reason = (responseHeaders and responseHeaders.error and responseHeaders.error.name)
-			or "unknown network error"
-		return nil, "Request failed: " .. tostring(reason)
+	for attempt = 1, MAX_RETRIES + 1 do
+		result, responseHeaders = LrHttp.post(config.baseUrl, requestBody, headers, "POST", 60)
+
+		if not result then
+			local reason = (responseHeaders and responseHeaders.error and responseHeaders.error.name)
+				or "unknown network error"
+			return nil, "Request failed: " .. tostring(reason)
+		end
+
+		local status = responseHeaders and responseHeaders.status
+		local isRetryable = status and (status == 429 or (status >= 500 and status < 600))
+
+		if isRetryable and attempt <= MAX_RETRIES then
+			LrTasks.sleep(RETRY_BASE_DELAY_SECONDS * (2 ^ (attempt - 1)))
+		else
+			break
+		end
 	end
 
 	local status = responseHeaders and responseHeaders.status

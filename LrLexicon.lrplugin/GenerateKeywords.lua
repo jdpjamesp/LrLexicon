@@ -15,21 +15,34 @@ local logger = LrLogger('LrLexicon')
 logger:enable("logfile")
 
 local PREVIEW_LONG_EDGE = 1024
+local MAX_KEYWORD_LENGTH = 60
+local MAX_KEYWORDS_PER_PHOTO = 25
 
 -- Tolerates output that doesn't follow the flat comma-separated instruction:
 -- strips bullet markers, splits on line breaks as well as commas, and drops
 -- a short leading "Label:" prefix (e.g. "Subject:", "Mood:") some models add
 -- despite being told not to - keeping whatever follows the colon instead of
--- discarding the line outright.
+-- discarding the line outright. Also guards against a model that ignores the
+-- format entirely and rambles: candidates over MAX_KEYWORD_LENGTH chars are
+-- dropped (a real keyword is never a sentence), and the result is capped at
+-- MAX_KEYWORDS_PER_PHOTO.
 local function parseKeywords(content)
 	local keywords = {}
 	local seen = {}
 
 	local function addKeyword(raw)
+		if #keywords >= MAX_KEYWORDS_PER_PHOTO then
+			return
+		end
+
 		local keyword = raw:match("^%s*(.-)%s*$")
 		-- A trimmed candidate ending in ':' is a leftover label/preamble
 		-- fragment (e.g. "comma-separated keywords:"), never a real keyword.
-		if keyword ~= "" and not keyword:match(":$") and not seen[keyword:lower()] then
+		if keyword ~= ""
+			and #keyword <= MAX_KEYWORD_LENGTH
+			and not keyword:match(":$")
+			and not seen[keyword:lower()]
+		then
 			seen[keyword:lower()] = true
 			table.insert(keywords, keyword)
 		end
@@ -197,6 +210,7 @@ LrFunctionContext.postAsyncTaskWithContext("LrLexicon_GenerateKeywords", functio
 
 	local results = {}
 	local failed = 0
+	local lastError = nil
 
 	local progressScope = LrProgressScope({
 		title = "LrLexicon: Generating Keywords",
@@ -218,6 +232,7 @@ LrFunctionContext.postAsyncTaskWithContext("LrLexicon_GenerateKeywords", functio
 
 		if not jpegData then
 			failed = failed + 1
+			lastError = string.format("%s: %s", filename, tostring(thumbError))
 			logger:errorf("[%d] %s -> preview failed: %s", i, filename, tostring(thumbError))
 		else
 			local base64Data = Base64.encode(jpegData)
@@ -225,6 +240,7 @@ LrFunctionContext.postAsyncTaskWithContext("LrLexicon_GenerateKeywords", functio
 
 			if not content then
 				failed = failed + 1
+				lastError = string.format("%s: %s", filename, tostring(apiError))
 				logger:errorf("[%d] %s -> API call failed: %s", i, filename, tostring(apiError))
 			else
 				local keywords = parseKeywords(content)
@@ -244,7 +260,10 @@ LrFunctionContext.postAsyncTaskWithContext("LrLexicon_GenerateKeywords", functio
 	if #results == 0 then
 		LrDialogs.message(
 			"LrLexicon",
-			string.format("No keywords generated (%d failed). See LrLexicon.log for details.", failed)
+			string.format(
+				"No keywords generated (%d failed).%s",
+				failed, lastError and ("\n\nLast error: " .. lastError) or ""
+			)
 		)
 		return
 	end
@@ -262,8 +281,9 @@ LrFunctionContext.postAsyncTaskWithContext("LrLexicon_GenerateKeywords", functio
 	LrDialogs.message(
 		"LrLexicon",
 		string.format(
-			"Wrote keywords to %d photo(s) (%d skipped, %d failed before review). See LrLexicon.log for details.",
-			#accepted, #results - #accepted, failed
+			"Wrote keywords to %d photo(s) (%d skipped, %d failed before review).%s",
+			#accepted, #results - #accepted, failed,
+			(failed > 0 and lastError) and ("\n\nLast error: " .. lastError) or ""
 		)
 	)
 end)
