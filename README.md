@@ -145,3 +145,24 @@ LrLexicon.lrplugin/
   Json.lua              -- minimal JSON encode/decode
   Base64.lua            -- base64 encoder
 ```
+
+## Disclaimer
+
+LrLexicon is provided **as-is, with no warranty of any kind**, express or
+implied — see the [LICENSE](LICENSE) for the full legal text. Using it is
+entirely at your own risk. In particular:
+
+- It writes to your Lightroom catalog. **Back up your catalog** before
+  running it on photos you care about, as you would before using any
+  third-party plugin.
+- AI-generated keywords can be wrong, irrelevant, or nonsensical — the
+  review step exists so you can catch this, but ultimately you're
+  responsible for whatever gets written to your catalog.
+- This project isn't affiliated with or endorsed by Adobe, OpenAI, Ollama,
+  or any AI provider it happens to connect to.
+
+## License
+
+[GNU General Public License v3.0](LICENSE) © 2026 James Palmer. You're free
+to use, modify, and redistribute this software under the terms of the GPLv3;
+see the [LICENSE](LICENSE) file for the full text.
