@@ -15,6 +15,10 @@ return {
 			title = "LrLexicon: Test Export Preview",
 			file = "ExportPreview.lua",
 		},
+		{
+			title = "LrLexicon: Generate Keywords (Preview)",
+			file = "GenerateKeywords.lua",
+		},
 	},
 
 	VERSION = { major = 0, minor = 1, revision = 0, build = 1 },

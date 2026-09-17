@@ -22,6 +22,13 @@ writes back AI-generated keywords onto photo metadata.
   caption instead. Step 5's response parsing should tolerate free-text
   output, not just strict comma-separated lists, and a stronger model may
   be worth trying for real keyword quality.
+- Step 5 added, not yet confirmed: **File > Plug-in Extras > LrLexicon:
+  Generate Keywords (Preview)** wires the full pipeline together end to end —
+  preview export, base64 encode, `ApiClient.generateKeywords()` via
+  `LrHttp.post()`, comma-split parsing — and logs the parsed keywords per
+  photo. Does **not** write to the catalog yet (that's step 6). API endpoint
+  is currently hardcoded in `GenerateKeywords.lua` to the local Ollama setup
+  used in step 4 testing; step 7 will move this into a settings dialog.
 
 ## Structure
 
@@ -31,6 +38,9 @@ LrLexicon.lrplugin/
   LogSelectedPhotos.lua     -- step 1: logs selected photos' filenames/keywords
   ExportPreview.lua         -- step 3: generates + base64-encodes a preview JPEG per photo
   Base64.lua                -- pure-Lua base64 encoder (no bit-library dependency)
+  Json.lua                  -- minimal JSON encode/decode (no bundled SDK library, not vendored)
+  ApiClient.lua             -- generic OpenAI-compatible chat completions client (LrHttp)
+  GenerateKeywords.lua      -- step 5: full pipeline, logs parsed keywords (no catalog writes yet)
 
 scripts/
   test-api.lua               -- step 4: standalone (non-Lightroom) test of the vision API call
@@ -51,8 +61,9 @@ scripts/
 
 ## Build order
 
-See project handover notes. Steps 1-4 done and confirmed. Note: the API layer
-is provider-agnostic — any OpenAI-compatible endpoint (OpenAI, local Ollama/LM
-Studio, etc.), not locked to one vendor. Next: wire the API call into the
-plugin itself (`LrHttp.post()` inside `LrTasks.startAsyncTask`), parsing the
-response into a keyword array.
+See project handover notes. Steps 1-4 done and confirmed. Step 5 (API call
+wired into the plugin, keywords parsed and logged) implemented, pending live
+confirmation in Lightroom. Note: the API layer is provider-agnostic — any
+OpenAI-compatible endpoint (OpenAI, local Ollama/LM Studio, etc.), not locked
+to one vendor. Next after that: step 6, write parsed keywords back to the
+catalog via `catalog:withWriteAccessDo()`.
