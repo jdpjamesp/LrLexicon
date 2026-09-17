@@ -1,94 +1,98 @@
 # LrLexicon
 
-A Lightroom Classic plugin that sends selected photos to a vision-capable AI
-API — any OpenAI-compatible endpoint, not locked to a single provider — and
-writes the generated keywords onto photo metadata, after a review step.
+A Lightroom Classic plugin that uses AI to generate keywords for your photos.
+Select photos, run one command, review the suggested keywords, and write the
+ones you want into your catalog.
 
-## Status
+## Bring your own AI
 
-Working end to end: configure the API endpoint/model/key in **File >
-Plug-in Extras > LrLexicon: Settings**, select photos, run **File >
-Plug-in Extras > LrLexicon: Generate Keywords**, review/edit the generated
-keywords per photo in a modal dialog, and write the accepted ones to the
-catalog.
+LrLexicon doesn't include or depend on any specific AI service. You connect
+it to whichever vision-capable AI API you want to use:
 
-Also has: retry-with-backoff on rate-limited/server-error API responses,
-defensive keyword filtering (length/count caps), and failure messages that
-surface the actual last error rather than only pointing at the log.
+- A cloud provider you already have an account/API key for (e.g. OpenAI)
+- A model running locally on your own machine (e.g. [Ollama](https://ollama.com)
+  or [LM Studio](https://lmstudio.ai)) — no API key needed, and no photos
+  ever leave your computer
+- Any other service that exposes an OpenAI-style "chat completions" API with
+  image support
 
-Not yet built: further polish as issues come up (e.g. per-provider quirks).
+This means any usage costs, rate limits, and terms of service are between you
+and whichever provider you choose — LrLexicon itself doesn't charge, meter,
+or restrict anything.
 
-## Structure
+## Requirements
+
+- Lightroom Classic (desktop)
+- Access to a vision-capable AI API (see above)
+
+## Installation
+
+1. Download or clone this repository somewhere permanent — Lightroom loads
+   the plugin directly from this folder, so don't delete or move it later
+   (Lightroom will show the plugin as missing if you do).
+2. In Lightroom Classic: **File > Plug-in Manager**.
+3. Click **Add**, then select the `LrLexicon.lrplugin` folder.
+4. Confirm it's listed as "Installed and running."
+
+## Setting up your AI connection
+
+Before generating any keywords, open **File > Plug-in Extras > LrLexicon:
+Settings** and fill in:
+
+| Field | What to enter |
+|---|---|
+| Endpoint URL | The full chat completions API URL for your provider. Examples: `https://api.openai.com/v1/chat/completions` (OpenAI), `http://localhost:11434/v1/chat/completions` (local Ollama), `http://localhost:1234/v1/chat/completions` (local LM Studio) |
+| Model | The exact model name your provider expects, e.g. `gpt-4o-mini` or `llava:latest` |
+| API Key | Required by most cloud providers; leave blank for local servers that don't need one. Stored in your OS's secure credential store (Keychain on Mac, Credential Manager on Windows) — never saved as plain text |
+| Prompt | The instruction sent to the AI describing what to generate. A sensible default is pre-filled; edit it to change the style, number, or focus of the keywords |
+
+## Using it
+
+1. Select one or more photos in the Library grid or filmstrip.
+2. **File > Plug-in Extras > LrLexicon: Generate Keywords**.
+3. Lightroom's progress area shows each photo being processed (local models
+   are noticeably slower than cloud APIs).
+4. A review window shows the suggested keywords for every photo. Uncheck any
+   photo you don't want to update, or edit the keyword text directly.
+5. Click **Write Keywords** to save them to your catalog, or **Cancel** to
+   discard everything. Nothing is written to your catalog until you approve
+   it here.
+
+There's no right-click menu entry — Lightroom Classic doesn't allow plugins
+to add one, so **File > Plug-in Extras** is the only menu location. If you
+use LrLexicon often, a third-party shortcut plugin (e.g. "Any Shortcut") can
+bind it to a key.
+
+## Things to know
+
+- **Your photos are sent to whichever endpoint you configure**, as compressed
+  preview images. With a cloud provider, that means images leave your
+  computer and are subject to that provider's terms and privacy policy. A
+  local model (Ollama, LM Studio) keeps everything on your machine.
+- **AI-generated keywords can be inconsistent**, especially with smaller or
+  local models — that's exactly why there's a review step. Always check
+  before writing.
+- **You pay for what you use.** Any API costs belong to your chosen provider;
+  LrLexicon adds no fees of its own.
+
+## Troubleshooting
+
+- Logs are written to `LrLexicon.log` — on Windows, under
+  `%LOCALAPPDATA%\Adobe\Lightroom\Logs\LrClassicLogs\`.
+- If generation fails, the summary dialog shows the last error message; the
+  log has full detail for every photo.
+- If your provider rate-limits requests, LrLexicon retries automatically a
+  few times with increasing delays before giving up on that photo.
+
+## Repository structure
 
 ```
 LrLexicon.lrplugin/
   Info.lua              -- plugin manifest, menu registration
-  GenerateKeywords.lua  -- entry point: preview -> base64 -> API call -> review dialog -> catalog write
-  Preferences.lua       -- settings storage (LrPrefs + LrPasswords) and settings dialog
-  OpenSettings.lua      -- thin menu-item script that opens the settings dialog
-  ApiClient.lua         -- generic OpenAI-compatible chat completions client (LrHttp)
-  Json.lua              -- minimal hand-written JSON encode/decode (SDK has no bundled JSON library)
-  Base64.lua            -- pure-Lua base64 encoder (no bit-library dependency)
+  GenerateKeywords.lua  -- main pipeline: preview -> API call -> review -> catalog write
+  Preferences.lua       -- settings storage and the Settings dialog
+  OpenSettings.lua      -- menu-item script that opens the Settings dialog
+  ApiClient.lua         -- OpenAI-compatible chat completions client
+  Json.lua              -- minimal JSON encode/decode
+  Base64.lua            -- base64 encoder
 ```
-
-## Loading the plugin in Lightroom Classic
-
-1. Open Lightroom Classic.
-2. File > Plug-in Manager > Add, then select the `LrLexicon.lrplugin` folder.
-3. Confirm it shows as "Installed and running".
-4. File > Plug-in Extras > LrLexicon: Settings — set the endpoint URL,
-   model, prompt, and API key (leave the key blank for endpoints that don't
-   require auth, e.g. a local Ollama/LM Studio server). Defaults point at a
-   local Ollama server running `llava:latest` if left unconfigured.
-5. Select one or more photos, then File > Plug-in Extras > LrLexicon:
-   Generate Keywords.
-6. Review the generated keywords in the dialog (uncheck a photo to skip it,
-   edit the text if needed), then click "Write Keywords" (or "Cancel" to
-   write nothing).
-
-Logs go to `LrLexicon.log` under
-`%LOCALAPPDATA%\Adobe\Lightroom\Logs\LrClassicLogs\` on Windows.
-
-There's no right-click context menu entry — Lightroom Classic's native photo
-context menu isn't extensible by third-party plugins via the public Lua SDK.
-File > Plug-in Extras is the only menu access point.
-
-## Configuration
-
-Endpoint URL, model, and prompt are stored via `LrPrefs` (the plugin's
-plain-text preferences file — fine for non-sensitive settings). The API key
-is stored via `LrPasswords`, which uses the OS-native credential store
-(Keychain on Mac, Credential Manager on Windows) rather than plain text.
-`Preferences.getConfig()` is the single source of truth `GenerateKeywords.lua`
-reads from; there's no hardcoded config left in the pipeline itself.
-
-## Known limitations
-
-- **Small local models produce inconsistent output.** The same prompt/image
-  against `llava:latest` has produced a clean keyword list, a plain caption,
-  a labeled breakdown, and even a literal echo of the prompt's own wording,
-  across separate calls. `parseKeywords()` in `GenerateKeywords.lua` tolerates
-  line breaks, bullets, stray label prefixes, and caps both individual
-  keyword length (60 chars) and count per photo (25), but the review dialog
-  is the real safety net for whatever slips through — a hosted model (OpenAI,
-  Claude via a compatible endpoint) should be far more consistent, easy to
-  try now via the settings dialog.
-- **Rate limits/transient errors:** `ApiClient.generateKeywords()` retries up
-  to 3 times with exponential backoff (2s, 4s, 8s) on HTTP 429 or 5xx
-  responses before giving up on that photo. No proactive throttling between
-  requests — this is reactive only, since a fixed delay would just slow down
-  local-model usage for no benefit.
-- **Preview size.** `photo:requestJpegThumbnail(1024, 1024, ...)` previews
-  have run 260KB-1.2MB base64-encoded — larger than expected for a "small
-  preview." Worth revisiting if large batches hit payload-size or cost
-  limits.
-- **`catalog:createKeyword()`'s documented 5th argument (`isPersonKeyword`)
-  triggers a generic "assertion failed!"** on this Lightroom Classic build.
-  It's omitted; the call only passes `(name, synonyms, includeOnExport,
-  parent)`.
-- **`catalog:createKeyword()` returns `nil` for a name that already exists**,
-  rather than the existing keyword as the SDK docs describe — confirmed via
-  the log (e.g. `'stone arch'` succeeded once, then failed every time after
-  once it existed in the catalog). Fixed by looking up existing top-level
-  keywords via `catalog:getKeywords()` first (cached per write batch) and
-  only calling `createKeyword()` for genuinely new names.
