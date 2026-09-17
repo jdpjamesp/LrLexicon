@@ -160,8 +160,9 @@ entirely at your own risk. In particular:
   responsible for whatever gets written to your catalog.
 - This project isn't affiliated with or endorsed by Adobe, OpenAI, Ollama,
   or any AI provider it happens to connect to.
-- **No support is offered.** This is a personal project shared as-is. There's
-  no guarantee of bug fixes, updates, or response to issues/pull requests —
+- **No support is offered.** This is a personal project shared as-is, with
+  no guarantee of bug fixes, updates, or response to issues. Pull requests
+  may be reviewed from time to time, but there's no commitment to do so —
   feel free to fork it if you need changes.
 
 ## License
