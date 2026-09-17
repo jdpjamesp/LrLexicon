@@ -86,3 +86,9 @@ reads from; there's no hardcoded config left in the pipeline itself.
   triggers a generic "assertion failed!"** on this Lightroom Classic build.
   It's omitted; the call only passes `(name, synonyms, includeOnExport,
   parent)`.
+- **`catalog:createKeyword()` returns `nil` for a name that already exists**,
+  rather than the existing keyword as the SDK docs describe — confirmed via
+  the log (e.g. `'stone arch'` succeeded once, then failed every time after
+  once it existed in the catalog). Fixed by looking up existing top-level
+  keywords via `catalog:getKeywords()` first (cached per write batch) and
+  only calling `createKeyword()` for genuinely new names.

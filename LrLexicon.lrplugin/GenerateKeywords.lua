@@ -172,19 +172,48 @@ local function showReviewDialog(context, results)
 	return accepted
 end
 
+-- On this Lightroom Classic build, catalog:createKeyword() returns nil for
+-- a name that already exists, rather than the existing keyword as the SDK
+-- docs describe - confirmed via the log (e.g. 'stone arch' succeeded once,
+-- then returned nil every time after once it existed). So look up existing
+-- top-level keywords first and only create genuinely new ones. Cached by
+-- lowercased name for the duration of one write batch to avoid rescanning
+-- catalog:getKeywords() for every repeated keyword across many photos.
+local function findOrCreateKeyword(catalog, cache, name)
+	local key = name:lower()
+	local cached = cache[key]
+	if cached then
+		return cached
+	end
+
+	for _, existing in ipairs(catalog:getKeywords()) do
+		if existing:getName():lower() == key then
+			cache[key] = existing
+			return existing
+		end
+	end
+
+	local created = catalog:createKeyword(name, {}, true, nil)
+	if created then
+		cache[key] = created
+	end
+	return created
+end
+
 local function writeKeywords(catalog, accepted)
 	catalog:withWriteAccessDo("LrLexicon: Write Keywords", function()
+		local keywordCache = {}
+
 		for _, entry in ipairs(accepted) do
 			local written = 0
 			for _, keywordName in ipairs(entry.keywords) do
-				logger:infof("Creating keyword '%s' for %s", keywordName, entry.filename)
-				local keyword = catalog:createKeyword(keywordName, {}, true, nil)
+				local keyword = findOrCreateKeyword(catalog, keywordCache, keywordName)
 
 				if keyword then
 					entry.photo:addKeyword(keyword)
 					written = written + 1
 				else
-					logger:errorf("createKeyword returned nil for '%s' (%s) - skipped", keywordName, entry.filename)
+					logger:errorf("Could not find or create keyword '%s' (%s) - skipped", keywordName, entry.filename)
 				end
 			end
 			logger:infof("Wrote %d/%d keyword(s) to %s", written, #entry.keywords, entry.filename)
