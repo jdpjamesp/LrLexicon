@@ -1,8 +1,28 @@
-# LrLexicon
+# LrLexicon — AI Auto-Keywording Plugin for Lightroom Classic
 
-A Lightroom Classic plugin that uses AI to generate keywords for your photos.
-Select photos, run one command, review the suggested keywords, and write the
-ones you want into your catalog.
+LrLexicon is a free, open-source Lightroom Classic plugin that automatically
+generates photo keywords using AI. Select photos, run one command, and get
+AI-suggested keywords covering subject, setting, mood, and photographic
+technique — reviewed and editable before anything is written to your
+catalog.
+
+It works with OpenAI, any OpenAI-compatible API, or a fully local/offline AI
+model such as [Ollama](https://ollama.com) or [LM Studio](https://lmstudio.ai)
+— you choose the provider, so your photos and API costs stay under your
+control.
+
+## Features
+
+- **Automatic AI keywording** for Lightroom Classic — describe a photo's
+  subject, setting, mood, and technique without typing a single tag by hand
+- **Bring your own AI** — OpenAI, any OpenAI-compatible endpoint, or a local
+  model (Ollama, LM Studio) for private, offline keyword generation with no
+  photos ever leaving your computer
+- **Review before you commit** — a built-in review step means nothing is
+  written to your Lightroom catalog without your approval
+- **No vendor lock-in** — switch AI providers any time from the Settings
+  dialog, no code changes required
+- **Free and open source**
 
 ## Bring your own AI
 
@@ -74,6 +94,35 @@ bind it to a key.
   before writing.
 - **You pay for what you use.** Any API costs belong to your chosen provider;
   LrLexicon adds no fees of its own.
+
+## Frequently asked questions
+
+**Can I use ChatGPT/OpenAI to automatically tag or keyword my Lightroom
+photos?**
+Yes. Point LrLexicon's Settings at `https://api.openai.com/v1/chat/completions`
+with your OpenAI API key and a vision-capable model (e.g. `gpt-4o-mini`), and
+it will generate keywords for any photos you select.
+
+**Does this work offline, with a local AI model?**
+Yes. LrLexicon works with local model servers like Ollama and LM Studio —
+point the Endpoint URL at your local server (e.g.
+`http://localhost:11434/v1/chat/completions` for Ollama) and leave the API
+Key blank. No photos leave your computer and there's no usage cost.
+
+**Is my photo data private?**
+Only if you use a local model. With any cloud/hosted AI provider, a
+compressed preview of each selected photo is sent to that provider's API and
+is subject to their terms and privacy policy — LrLexicon itself doesn't
+store or transmit anything beyond that single request.
+
+**Does this plugin cost money?**
+LrLexicon itself is free. If you use a paid AI provider (like OpenAI), you
+pay that provider directly for API usage — LrLexicon adds no fees of its
+own. A local model via Ollama or LM Studio is free to run.
+
+**What Lightroom versions does this support?**
+Lightroom Classic (desktop). It is not compatible with Lightroom (cloud) or
+mobile.
 
 ## Troubleshooting
 
