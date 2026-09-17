@@ -8,14 +8,6 @@ return {
 
 	LrExportMenuItems = {
 		{
-			title = "LrLexicon: Log Selected Photos",
-			file = "LogSelectedPhotos.lua",
-		},
-		{
-			title = "LrLexicon: Test Export Preview",
-			file = "ExportPreview.lua",
-		},
-		{
 			title = "LrLexicon: Generate Keywords",
 			file = "GenerateKeywords.lua",
 		},
