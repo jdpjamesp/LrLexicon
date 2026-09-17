@@ -28,12 +28,27 @@ writes back AI-generated keywords onto photo metadata.
   and logs the parsed keywords per photo.
 - Step 6 added, not yet confirmed, with the step-8 review dialog pulled
   forward: after generation, a modal review dialog lists each photo with an
-  include/exclude checkbox and an editable, comma-separated keyword text
-  field. Only on clicking "Write Keywords" does it write via
+  include/exclude checkbox and an editable, multi-line keyword text field
+  (first layout attempt had a fixed-height scroll area and a single-line
+  field that truncated text — fixed to size to content and stack a
+  multi-line field per photo, only scrolling once there are several photos).
+  Only on clicking "Write Keywords" does it write via
   `catalog:withWriteAccessDo()` (`catalog:createKeyword()` +
   `photo:addKeyword()`); "Cancel" writes nothing. API endpoint is currently
   hardcoded in `GenerateKeywords.lua` to the local Ollama setup used in step
   4 testing; step 7 will move this into a settings dialog.
+- **Local model output quality is inherently inconsistent.** `llava:latest`
+  (a small local model) has produced clean comma-separated lists, plain
+  captions, labeled breakdowns, and even a literal echo of the prompt's own
+  category words — across identical prompts/images, due to sampling
+  variance. Prompt tuning narrowed this (current prompt gets clean output
+  ~2/3 of the time) but can't eliminate it. `parseKeywords()` was made
+  tolerant of line breaks, bullets, and short "Label:" prefixes; remaining
+  noise (e.g. a preamble sentence before the list) is left for the review
+  dialog to catch, rather than chasing every edge case in the parser. A
+  hosted model (OpenAI, Claude via a compatible endpoint) will likely be far
+  more consistent — worth reassessing once step 7's settings dialog makes
+  switching providers easy.
 
 ## Structure
 

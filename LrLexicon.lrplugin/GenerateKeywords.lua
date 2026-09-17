@@ -18,20 +18,44 @@ local API_CONFIG = {
 	baseUrl = "http://localhost:11434/v1/chat/completions",
 	apiKey = nil,
 	model = "llava:latest",
-	prompt = "Return 12-15 concise, comma-separated keywords for this photo, "
-		.. "covering subject, location type, mood, and technique. No commentary.",
+	prompt = "List 12-15 comma-separated keywords describing this photo's subject, setting, "
+		.. "mood, and photographic technique. Output only the keywords as a plain "
+		.. "comma-separated list, with no labels, headings, or extra text.",
 }
 
 local PREVIEW_LONG_EDGE = 1024
 
+-- Tolerates output that doesn't follow the flat comma-separated instruction:
+-- strips bullet markers, splits on line breaks as well as commas, and drops
+-- a short leading "Label:" prefix (e.g. "Subject:", "Mood:") some models add
+-- despite being told not to - keeping whatever follows the colon instead of
+-- discarding the line outright.
 local function parseKeywords(content)
 	local keywords = {}
-	for keyword in content:gmatch("[^,]+") do
-		keyword = keyword:match("^%s*(.-)%s*$")
-		if keyword ~= "" then
+	local seen = {}
+
+	local function addKeyword(raw)
+		local keyword = raw:match("^%s*(.-)%s*$")
+		if keyword ~= "" and not seen[keyword:lower()] then
+			seen[keyword:lower()] = true
 			table.insert(keywords, keyword)
 		end
 	end
+
+	for line in (content .. "\n"):gmatch("(.-)\n") do
+		line = line:match("^%s*(.-)%s*$")
+		line = line:gsub("^[%-%*•]+%s*", "")
+
+		local label, rest = line:match("^(%a[%a%s]-):%s*(.+)$")
+		if label and #label <= 20 then
+			line = rest
+		end
+
+		for part in line:gmatch("[^,]+") do
+			addKeyword(part)
+		end
+	end
+
 	return keywords
 end
 
@@ -63,7 +87,10 @@ local function showReviewDialog(context, results)
 	local bind = LrView.bind
 	local properties = LrBinding.makePropertyTable(context)
 
-	local rows = { spacing = f:control_spacing() }
+	local DIALOG_WIDTH = 600
+	local SCROLL_THRESHOLD = 5
+
+	local rows = { spacing = f:control_spacing(), fill_horizontal = 1 }
 
 	for i, entry in ipairs(results) do
 		local includeKey = "include_" .. i
@@ -72,25 +99,46 @@ local function showReviewDialog(context, results)
 		properties[includeKey] = true
 		properties[keywordsKey] = table.concat(entry.keywords, ", ")
 
-		table.insert(rows, f:row{
-			f:checkbox{ value = bind(includeKey) },
-			f:static_text{ title = entry.filename, width_in_chars = 22 },
-			f:edit_field{ value = bind(keywordsKey), width_in_chars = 50 },
+		table.insert(rows, f:column{
+			fill_horizontal = 1,
+			spacing = f:control_spacing(),
+			f:row{
+				f:checkbox{ value = bind(includeKey) },
+				f:static_text{ title = entry.filename },
+			},
+			f:edit_field{
+				value = bind(keywordsKey),
+				fill_horizontal = 1,
+				width_in_chars = 70,
+				height_in_lines = 3,
+			},
+			f:spacer{ height = 4 },
 		})
+	end
+
+	local rowsColumn = f:column(rows)
+
+	local reviewArea
+	if #results > SCROLL_THRESHOLD then
+		reviewArea = f:scrolled_view{
+			width = DIALOG_WIDTH,
+			height = 420,
+			rowsColumn,
+		}
+	else
+		reviewArea = rowsColumn
 	end
 
 	local contents = f:column{
 		bind_to_object = properties,
 		spacing = f:control_spacing(),
+		width = DIALOG_WIDTH,
 		f:static_text{
 			title = "Review keywords before writing them to the catalog. "
 				.. "Uncheck a photo to skip it, or edit its keyword text.",
+			fill_horizontal = 1,
 		},
-		f:scrolled_view{
-			width = 720,
-			height = 360,
-			f:column(rows),
-		},
+		reviewArea,
 	}
 
 	local result = LrDialogs.presentModalDialog({

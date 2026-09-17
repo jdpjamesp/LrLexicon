@@ -9,8 +9,9 @@ local Base64 = require 'Base64'
 
 local API_BASE_URL = "http://localhost:11434/v1/chat/completions"
 local MODEL = "llava:latest"
-local PROMPT = "Return 12-15 concise, comma-separated keywords for this photo, "
-	.. "covering subject, location type, mood, and technique. No commentary."
+local PROMPT = "List 12-15 comma-separated keywords describing this photo's subject, setting, "
+	.. "mood, and photographic technique. Output only the keywords as a plain "
+	.. "comma-separated list, with no labels, headings, or extra text."
 
 local imagePath = arg[1]
 if not imagePath then
