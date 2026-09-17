@@ -9,20 +9,10 @@ local LrProgressScope = import 'LrProgressScope'
 
 local Base64 = require 'Base64'
 local ApiClient = require 'ApiClient'
+local Preferences = require 'Preferences'
 
 local logger = LrLogger('LrLexicon')
 logger:enable("logfile")
-
--- TODO (step 7): move into a settings dialog backed by LrPrefs / LrPasswords
--- instead of being hardcoded here.
-local API_CONFIG = {
-	baseUrl = "http://localhost:11434/v1/chat/completions",
-	apiKey = nil,
-	model = "llava:latest",
-	prompt = "List 12-15 comma-separated keywords describing this photo's subject, setting, "
-		.. "mood, and photographic technique. Output only the keywords as a plain "
-		.. "comma-separated list, with no labels, headings, or extra text.",
-}
 
 local PREVIEW_LONG_EDGE = 1024
 
@@ -202,6 +192,8 @@ LrFunctionContext.postAsyncTaskWithContext("LrLexicon_GenerateKeywords", functio
 		LrDialogs.message("LrLexicon", "No photos selected.")
 		return
 	end
+
+	local API_CONFIG = Preferences.getConfig()
 
 	local results = {}
 	local failed = 0

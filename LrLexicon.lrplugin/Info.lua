@@ -11,6 +11,10 @@ return {
 			title = "LrLexicon: Generate Keywords",
 			file = "GenerateKeywords.lua",
 		},
+		{
+			title = "LrLexicon: Settings",
+			file = "OpenSettings.lua",
+		},
 	},
 
 	VERSION = { major = 0, minor = 1, revision = 0, build = 1 },

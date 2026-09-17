@@ -6,13 +6,13 @@ writes the generated keywords onto photo metadata, after a review step.
 
 ## Status
 
-Working end to end: select photos, run **File > Plug-in Extras > LrLexicon:
-Generate Keywords**, review/edit the generated keywords per photo in a modal
-dialog, and write the accepted ones to the catalog.
+Working end to end: configure the API endpoint/model/key in **File >
+Plug-in Extras > LrLexicon: Settings**, select photos, run **File >
+Plug-in Extras > LrLexicon: Generate Keywords**, review/edit the generated
+keywords per photo in a modal dialog, and write the accepted ones to the
+catalog.
 
-Not yet built: a settings dialog for the API endpoint/model/key (currently
-hardcoded in `GenerateKeywords.lua`) and general polish (rate limiting,
-broader error handling).
+Not yet built: general polish (rate limiting, broader error handling).
 
 ## Structure
 
@@ -20,6 +20,8 @@ broader error handling).
 LrLexicon.lrplugin/
   Info.lua              -- plugin manifest, menu registration
   GenerateKeywords.lua  -- entry point: preview -> base64 -> API call -> review dialog -> catalog write
+  Preferences.lua       -- settings storage (LrPrefs + LrPasswords) and settings dialog
+  OpenSettings.lua      -- thin menu-item script that opens the settings dialog
   ApiClient.lua         -- generic OpenAI-compatible chat completions client (LrHttp)
   Json.lua              -- minimal hand-written JSON encode/decode (SDK has no bundled JSON library)
   Base64.lua            -- pure-Lua base64 encoder (no bit-library dependency)
@@ -30,9 +32,13 @@ LrLexicon.lrplugin/
 1. Open Lightroom Classic.
 2. File > Plug-in Manager > Add, then select the `LrLexicon.lrplugin` folder.
 3. Confirm it shows as "Installed and running".
-4. Select one or more photos, then File > Plug-in Extras > LrLexicon:
+4. File > Plug-in Extras > LrLexicon: Settings — set the endpoint URL,
+   model, prompt, and API key (leave the key blank for endpoints that don't
+   require auth, e.g. a local Ollama/LM Studio server). Defaults point at a
+   local Ollama server running `llava:latest` if left unconfigured.
+5. Select one or more photos, then File > Plug-in Extras > LrLexicon:
    Generate Keywords.
-5. Review the generated keywords in the dialog (uncheck a photo to skip it,
+6. Review the generated keywords in the dialog (uncheck a photo to skip it,
    edit the text if needed), then click "Write Keywords" (or "Cancel" to
    write nothing).
 
@@ -45,11 +51,12 @@ File > Plug-in Extras is the only menu access point.
 
 ## Configuration
 
-`API_CONFIG` at the top of `GenerateKeywords.lua` currently hardcodes the
-endpoint, model, and prompt (tested against a local Ollama server running
-`llava:latest`). This will move to a proper settings dialog (`LrPrefs` for
-endpoint/model, `LrPasswords` — the OS-native credential store — for the API
-key) as the next piece of work.
+Endpoint URL, model, and prompt are stored via `LrPrefs` (the plugin's
+plain-text preferences file — fine for non-sensitive settings). The API key
+is stored via `LrPasswords`, which uses the OS-native credential store
+(Keychain on Mac, Credential Manager on Windows) rather than plain text.
+`Preferences.getConfig()` is the single source of truth `GenerateKeywords.lua`
+reads from; there's no hardcoded config left in the pipeline itself.
 
 ## Known limitations
 
