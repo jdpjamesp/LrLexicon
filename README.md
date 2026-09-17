@@ -106,7 +106,12 @@ step-8 review dialog and progress bar pulled forward. Note: the API layer is
 provider-agnostic — any OpenAI-compatible endpoint (OpenAI, local Ollama/LM
 Studio, etc.), not locked to one vendor. Next: step 7, a real settings
 dialog (`LrPrefs` for endpoint/model, `LrPasswords` for the API key) instead
-of the hardcoded `API_CONFIG` in `GenerateKeywords.lua`. Also worth
-considering: the right-click context menu on photos should already surface
-these commands automatically (Lightroom mirrors `LrExportMenuItems` entries
-into a "Plug-in Extras" submenu there) — pending user confirmation.
+of the hardcoded `API_CONFIG` in `GenerateKeywords.lua`.
+
+**Access point correction:** confirmed live that `LrExportMenuItems` entries
+do **not** appear in the photo grid/filmstrip right-click context menu on
+this Lightroom Classic version — that native menu isn't extensible by
+third-party plugins via the public Lua SDK. File > Plug-in Extras remains
+the only menu access point; user opted to assign a Lightroom keyboard
+shortcut (Edit > Keyboard Shortcuts) to "LrLexicon: Generate Keywords"
+instead, which needs no plugin code changes.
