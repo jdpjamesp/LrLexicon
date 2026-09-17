@@ -172,11 +172,19 @@ end
 local function writeKeywords(catalog, accepted)
 	catalog:withWriteAccessDo("LrLexicon: Write Keywords", function()
 		for _, entry in ipairs(accepted) do
+			local written = 0
 			for _, keywordName in ipairs(entry.keywords) do
-				local keyword = catalog:createKeyword(keywordName, {}, true, nil, false)
-				entry.photo:addKeyword(keyword)
+				logger:infof("Creating keyword '%s' for %s", keywordName, entry.filename)
+				local keyword = catalog:createKeyword(keywordName, {}, true, nil)
+
+				if keyword then
+					entry.photo:addKeyword(keyword)
+					written = written + 1
+				else
+					logger:errorf("createKeyword returned nil for '%s' (%s) - skipped", keywordName, entry.filename)
+				end
 			end
-			logger:infof("Wrote %d keyword(s) to %s", #entry.keywords, entry.filename)
+			logger:infof("Wrote %d/%d keyword(s) to %s", written, #entry.keywords, entry.filename)
 		end
 	end)
 end
