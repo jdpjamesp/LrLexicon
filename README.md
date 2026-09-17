@@ -62,7 +62,7 @@ Settings** and fill in:
 | Field | What to enter |
 |---|---|
 | Endpoint URL | The full chat completions API URL for your provider. Examples: `https://api.openai.com/v1/chat/completions` (OpenAI), `http://localhost:11434/v1/chat/completions` (local Ollama), `http://localhost:1234/v1/chat/completions` (local LM Studio) |
-| Model | The exact model name your provider expects, e.g. `gpt-4o-mini` or `llava:latest` |
+| Model | The exact model name your provider expects, e.g. `gpt-4o-mini` or `llava:latest`. **Must be a vision-capable model** — with Ollama, that means pulling one explicitly (e.g. `ollama pull llava`); its default text-only models (like `llama3.2`) can't process images and will fail |
 | API Key | Required by most cloud providers; leave blank for local servers that don't need one. Stored in your OS's secure credential store (Keychain on Mac, Credential Manager on Windows) — never saved as plain text |
 | Prompt | The instruction sent to the AI describing what to generate. A sensible default is pre-filled; edit it to change the style, number, or focus of the keywords |
 
@@ -107,7 +107,10 @@ it will generate keywords for any photos you select.
 Yes. LrLexicon works with local model servers like Ollama and LM Studio —
 point the Endpoint URL at your local server (e.g.
 `http://localhost:11434/v1/chat/completions` for Ollama) and leave the API
-Key blank. No photos leave your computer and there's no usage cost.
+Key blank. No photos leave your computer and there's no usage cost. With
+Ollama, make sure you've pulled a vision-capable model first (e.g.
+`ollama pull llava`) — Ollama's own default models are text-only and can't
+process images.
 
 **Is my photo data private?**
 Only if you use a local model. With any cloud/hosted AI provider, a
