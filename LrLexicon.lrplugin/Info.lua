@@ -16,7 +16,7 @@ return {
 			file = "ExportPreview.lua",
 		},
 		{
-			title = "LrLexicon: Generate Keywords (Preview)",
+			title = "LrLexicon: Generate Keywords",
 			file = "GenerateKeywords.lua",
 		},
 	},

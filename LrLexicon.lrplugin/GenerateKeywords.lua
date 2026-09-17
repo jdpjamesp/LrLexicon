@@ -3,6 +3,8 @@ local LrLogger = import 'LrLogger'
 local LrTasks = import 'LrTasks'
 local LrFunctionContext = import 'LrFunctionContext'
 local LrDialogs = import 'LrDialogs'
+local LrView = import 'LrView'
+local LrBinding = import 'LrBinding'
 
 local Base64 = require 'Base64'
 local ApiClient = require 'ApiClient'
@@ -53,6 +55,81 @@ local function requestPreviewSync(photo, size)
 	return jpegData, errorMsg
 end
 
+-- Shows the generated keywords per photo for review before anything is
+-- written to the catalog. Returns the accepted subset (photo, filename,
+-- possibly-edited keywords), or nil if the user cancelled.
+local function showReviewDialog(context, results)
+	local f = LrView.osFactory()
+	local bind = LrView.bind
+	local properties = LrBinding.makePropertyTable(context)
+
+	local rows = { spacing = f:control_spacing() }
+
+	for i, entry in ipairs(results) do
+		local includeKey = "include_" .. i
+		local keywordsKey = "keywords_" .. i
+
+		properties[includeKey] = true
+		properties[keywordsKey] = table.concat(entry.keywords, ", ")
+
+		table.insert(rows, f:row{
+			f:checkbox{ value = bind(includeKey) },
+			f:static_text{ title = entry.filename, width_in_chars = 22 },
+			f:edit_field{ value = bind(keywordsKey), width_in_chars = 50 },
+		})
+	end
+
+	local contents = f:column{
+		bind_to_object = properties,
+		spacing = f:control_spacing(),
+		f:static_text{
+			title = "Review keywords before writing them to the catalog. "
+				.. "Uncheck a photo to skip it, or edit its keyword text.",
+		},
+		f:scrolled_view{
+			width = 720,
+			height = 360,
+			f:column(rows),
+		},
+	}
+
+	local result = LrDialogs.presentModalDialog({
+		title = "LrLexicon: Review Keywords",
+		contents = contents,
+		actionVerb = "Write Keywords",
+		cancelVerb = "Cancel",
+	})
+
+	if result ~= "ok" then
+		return nil
+	end
+
+	local accepted = {}
+	for i, entry in ipairs(results) do
+		if properties["include_" .. i] then
+			table.insert(accepted, {
+				photo = entry.photo,
+				filename = entry.filename,
+				keywords = parseKeywords(properties["keywords_" .. i]),
+			})
+		end
+	end
+
+	return accepted
+end
+
+local function writeKeywords(catalog, accepted)
+	catalog:withWriteAccessDo("LrLexicon: Write Keywords", function()
+		for _, entry in ipairs(accepted) do
+			for _, keywordName in ipairs(entry.keywords) do
+				local keyword = catalog:createKeyword(keywordName, {}, true, nil, false)
+				entry.photo:addKeyword(keyword)
+			end
+			logger:infof("Wrote %d keyword(s) to %s", #entry.keywords, entry.filename)
+		end
+	end)
+end
+
 LrFunctionContext.postAsyncTaskWithContext("LrLexicon_GenerateKeywords", function(context)
 	context:addFailureHandler(function(status, message)
 		logger:errorf("GenerateKeywords failed: %s", tostring(message))
@@ -67,7 +144,7 @@ LrFunctionContext.postAsyncTaskWithContext("LrLexicon_GenerateKeywords", functio
 		return
 	end
 
-	local succeeded = 0
+	local results = {}
 	local failed = 0
 
 	for i, photo in ipairs(photos) do
@@ -86,21 +163,38 @@ LrFunctionContext.postAsyncTaskWithContext("LrLexicon_GenerateKeywords", functio
 				logger:errorf("[%d] %s -> API call failed: %s", i, filename, tostring(apiError))
 			else
 				local keywords = parseKeywords(content)
-				succeeded = succeeded + 1
 				logger:infof(
 					"[%d] %s -> raw response: %q | parsed %d keyword(s): %s",
 					i, filename, content, #keywords, table.concat(keywords, ", ")
 				)
+				table.insert(results, { photo = photo, filename = filename, keywords = keywords })
 			end
 		end
 	end
 
+	if #results == 0 then
+		LrDialogs.message(
+			"LrLexicon",
+			string.format("No keywords generated (%d failed). See LrLexicon.log for details.", failed)
+		)
+		return
+	end
+
+	local accepted = showReviewDialog(context, results)
+
+	if not accepted then
+		logger:info("Keyword write cancelled by user.")
+		LrDialogs.message("LrLexicon", "Cancelled - no keywords were written.")
+		return
+	end
+
+	writeKeywords(catalog, accepted)
+
 	LrDialogs.message(
 		"LrLexicon",
 		string.format(
-			"Generated keywords for %d/%d photo(s) (%d failed). See LrLexicon.log for details. "
-				.. "Keywords are logged only - not yet written to the catalog.",
-			succeeded, #photos, failed
+			"Wrote keywords to %d photo(s) (%d skipped, %d failed before review). See LrLexicon.log for details.",
+			#accepted, #results - #accepted, failed
 		)
 	)
 end)
