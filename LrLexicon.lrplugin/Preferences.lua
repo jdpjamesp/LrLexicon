@@ -20,7 +20,10 @@ local DEFAULTS = {
 	model = "llava:latest",
 	prompt = "List 12-15 comma-separated keywords describing this photo's subject, setting, "
 		.. "mood, and photographic technique. Output only the keywords as a plain "
-		.. "comma-separated list, with no labels, headings, or extra text.",
+		.. "comma-separated list, with no labels, headings, or extra text. "
+		.. "Use no punctuation other than the commas separating keywords - no full "
+		.. "stops or other trailing punctuation after any keyword. Keep all keywords "
+		.. "lower case unless they are proper names.",
 }
 
 local function prefs()
