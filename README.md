@@ -76,7 +76,7 @@ Settings** and fill in:
    photo you don't want to update, or edit the keyword text directly.
 5. Click **Write Keywords** to save them to your catalog, or **Cancel** to
    discard everything. Nothing is written to your catalog until you approve
-   it here.
+   it here. Writing also shows progress for larger batches.
 
 There's no right-click menu entry — Lightroom Classic doesn't allow plugins
 to add one, so **File > Plug-in Extras** is the only menu location. If you
