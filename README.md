@@ -1,12 +1,12 @@
 # LrLexicon
 
-A Lightroom Classic plugin that sends selected photos to the Claude API
-(vision-capable model) and writes back AI-generated keywords onto photo
-metadata.
+A Lightroom Classic plugin that sends selected photos to a vision-capable AI
+API — any OpenAI-compatible endpoint, not locked to a single provider — and
+writes back AI-generated keywords onto photo metadata.
 
 ## Status
 
-Step 1 scaffolded: bare plugin with a single menu item under
+Step 1 confirmed working: bare plugin with a single menu item under
 **File > Plug-in Extras > LrLexicon: Log Selected Photos** that logs the
 filename and existing keywords of each selected photo.
 
@@ -27,8 +27,8 @@ LrLexicon.lrplugin/
 5. Select one or more photos in the Library, then go to
    File > Plug-in Extras > LrLexicon: Log Selected Photos.
 6. A confirmation dialog appears; details are written to `LrLexicon.log`
-   (Lightroom writes plugin logs to the user's home/Documents folder —
-   exact location depends on OS; search for `LrLexicon.log` if unsure).
+   under `%LOCALAPPDATA%\Adobe\Lightroom\Logs\LrClassicLogs\` on Windows
+   (i.e. `C:\Users\<you>\AppData\Local\Adobe\Lightroom\Logs\LrClassicLogs\LrLexicon.log`).
 
 ## Build order
 
