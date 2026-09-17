@@ -5,6 +5,7 @@ local LrFunctionContext = import 'LrFunctionContext'
 local LrDialogs = import 'LrDialogs'
 local LrView = import 'LrView'
 local LrBinding = import 'LrBinding'
+local LrProgressScope = import 'LrProgressScope'
 
 local Base64 = require 'Base64'
 local ApiClient = require 'ApiClient'
@@ -195,8 +196,22 @@ LrFunctionContext.postAsyncTaskWithContext("LrLexicon_GenerateKeywords", functio
 	local results = {}
 	local failed = 0
 
+	local progressScope = LrProgressScope({
+		title = "LrLexicon: Generating Keywords",
+		functionContext = context,
+	})
+	progressScope:setCancelable(true)
+
 	for i, photo in ipairs(photos) do
+		if progressScope:isCanceled() then
+			logger:infof("Generation cancelled after %d/%d photo(s).", i - 1, #photos)
+			break
+		end
+
 		local filename = photo:getFormattedMetadata('fileName')
+		progressScope:setCaption(string.format("%s (%d/%d)", filename, i, #photos))
+		progressScope:setPortionComplete(i - 1, #photos)
+
 		local jpegData, thumbError = requestPreviewSync(photo, PREVIEW_LONG_EDGE)
 
 		if not jpegData then
@@ -218,7 +233,11 @@ LrFunctionContext.postAsyncTaskWithContext("LrLexicon_GenerateKeywords", functio
 				table.insert(results, { photo = photo, filename = filename, keywords = keywords })
 			end
 		end
+
+		progressScope:setPortionComplete(i, #photos)
 	end
+
+	progressScope:done()
 
 	if #results == 0 then
 		LrDialogs.message(

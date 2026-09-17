@@ -49,6 +49,11 @@ writes back AI-generated keywords onto photo metadata.
   hosted model (OpenAI, Claude via a compatible endpoint) will likely be far
   more consistent — worth reassessing once step 7's settings dialog makes
   switching providers easy.
+- Added progress reporting (part of step 8, pulled forward): generation now
+  reports to Lightroom's own progress/activity area via `LrProgressScope`,
+  showing the current filename and position (e.g. "DSC04304.ARW (2/5)") and
+  supporting cancellation mid-batch — useful since local models are much
+  slower than a hosted API per photo.
 
 ## Structure
 
