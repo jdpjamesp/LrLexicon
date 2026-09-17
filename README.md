@@ -26,17 +26,24 @@ writes back AI-generated keywords onto photo metadata.
   Keywords** runs the full pipeline — preview export, base64 encode,
   `ApiClient.generateKeywords()` via `LrHttp.post()`, comma-split parsing —
   and logs the parsed keywords per photo.
-- Step 6 added, not yet confirmed, with the step-8 review dialog pulled
-  forward: after generation, a modal review dialog lists each photo with an
-  include/exclude checkbox and an editable, multi-line keyword text field.
-  Layout confirmed good after a fix (first attempt had a fixed-height scroll
-  area and a single-line field that truncated text — now sizes to content
-  and stacks a multi-line field per photo, only scrolling once there are
-  several photos). Only on clicking "Write Keywords" does it write via
-  `catalog:withWriteAccessDo()` (`catalog:createKeyword()` +
-  `photo:addKeyword()`); "Cancel" writes nothing. API endpoint is currently
-  hardcoded in `GenerateKeywords.lua` to the local Ollama setup used in step
-  4 testing; step 7 will move this into a settings dialog.
+- Step 6 confirmed working: after generation, a modal review dialog lists
+  each photo with an include/exclude checkbox and an editable, multi-line
+  keyword text field. Layout confirmed good after a fix (first attempt had a
+  fixed-height scroll area and a single-line field that truncated text — now
+  sizes to content and stacks a multi-line field per photo, only scrolling
+  once there are several photos). Only on clicking "Write Keywords" does it
+  write via `catalog:withWriteAccessDo()` (`catalog:createKeyword()` +
+  `photo:addKeyword()`); "Cancel" writes nothing. Hit and fixed a generic
+  "assertion failed!" from the catalog on the first live write attempt — see
+  below. API endpoint is currently hardcoded in `GenerateKeywords.lua` to the
+  local Ollama setup used in step 4 testing; step 7 will move this into a
+  settings dialog.
+  - The "assertion failed!" was traced (via the log) to a batch of 16
+    perfectly normal keywords, ruling out bad keyword text — pointed instead
+    at the `catalog:createKeyword()` call signature. Dropped the trailing
+    `isPersonKeyword` argument (this SDK build's binding apparently didn't
+    expect it) and added a nil-check before `addKeyword()` plus per-keyword
+    logging. Confirmed fixed: subsequent write succeeded cleanly.
 - **Local model output quality is inherently inconsistent.** `llava:latest`
   (a small local model) has produced clean comma-separated lists, plain
   captions, labeled breakdowns, and even a literal echo of the prompt's own
@@ -94,11 +101,12 @@ scripts/
 
 ## Build order
 
-See project handover notes. Steps 1-5 done and confirmed. Step 6 (catalog
-writes) implemented with the step-8 review dialog pulled forward — pending
-live confirmation in Lightroom, since this is the first step that touches
-real catalog data. Note: the API layer is provider-agnostic — any
-OpenAI-compatible endpoint (OpenAI, local Ollama/LM Studio, etc.), not locked
-to one vendor. Next after that: step 7, a real settings dialog (`LrPrefs` for
-endpoint/model, `LrPasswords` for the API key) instead of the hardcoded
-`API_CONFIG` in `GenerateKeywords.lua`.
+See project handover notes. Steps 1-6 done and confirmed, including the
+step-8 review dialog and progress bar pulled forward. Note: the API layer is
+provider-agnostic — any OpenAI-compatible endpoint (OpenAI, local Ollama/LM
+Studio, etc.), not locked to one vendor. Next: step 7, a real settings
+dialog (`LrPrefs` for endpoint/model, `LrPasswords` for the API key) instead
+of the hardcoded `API_CONFIG` in `GenerateKeywords.lua`. Also worth
+considering: the right-click context menu on photos should already surface
+these commands automatically (Lightroom mirrors `LrExportMenuItems` entries
+into a "Plug-in Extras" submenu there) — pending user confirmation.
